@@ -1,0 +1,12 @@
+version 1
+ molecule Na+
+	 atom
+	 	 name Na+
+	 	 initial_type    Na+
+		 final_type      Na+
+		 initial_charge  1.00000
+		 final_charge    0.00000
+		 initial_LJ      2.43928  0.08744
+		 final_LJ        2.43928  0.08744
+	 endatom
+end molecule

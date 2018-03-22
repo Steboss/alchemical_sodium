@@ -1,0 +1,2 @@
+sodium_mixin_states: test with openMM to reproduce Reaction Field alchemical free energy (discharging step)
+sodium_sire : reference results obtained with Sire
