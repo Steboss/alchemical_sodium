@@ -17,11 +17,13 @@ def set_lambda_electrostatics(reference_system,alchemical_atoms, lambda_electros
     #set to (1-lambda_electrostatics)*charge the ion charge
     #copy_system = copy.deepcopy(reference_system)
     #take the non bonded forces
+    copy_system = copy.deepcopy(reference_system)
     for force_index, reference_force in enumerate(reference_system.getForces()):
         reference_force_name = reference_force.__class__.__name__ 
         if (reference_force_name == "NonbondedForce"):
             #now we have the nonbonded forces 
             nonbonded_force =copy.deepcopy(reference_force)#copy the force 
+
             break
             
 
@@ -38,9 +40,9 @@ def set_lambda_electrostatics(reference_system,alchemical_atoms, lambda_electros
     #    [iatom,jatom,chargeprod,sigma,epsilon] = nonbonded_force.getExceptionParameters(exception_index)
     #    print(iatom,jatom,chargeprod,sigma,epsilon)
     #THIS IS ABSOLUTELY IMPORTANT! remove the force to avoid duplicates and OpenMM errors
-    reference_system.removeForce(force_index)  
-    reference_system.addForce(nonbonded_force)
-    return reference_system
+    copy_system.removeForce(force_index)  
+    copy_system.addForce(nonbonded_force)
+    return copy_system
 
 
 ################
@@ -57,7 +59,7 @@ properties = {'CudaPrecision': 'mixed'}
 #nsteps = 10000
 #niterations = 100 #number of samples to collect per alchemical state
 #TEST VAL
-nsteps =1000
+nsteps =10000
 niterations = 5
 lambdas = np.linspace(0.0,1.0,10)
 nstates = len(lambdas)
@@ -67,7 +69,7 @@ kT =unit.AVOGADRO_CONSTANT_NA*unit.BOLTZMANN_CONSTANT_kB*temperature
 
 #now run the simulations
 for k in range(nstates):
-    print("Lambda %.2f" % lambdas[k])
+    print("*******************Lambda %.2f*******************" % lambdas[k])
     #create the lambda folderse if it does not exist
     if not os.path.exists("lambda-%.2f" % lambdas[k]):
             os.makedirs("lambda-%.2f" % lambdas[k])
@@ -96,7 +98,7 @@ for k in range(nstates):
         else:
             #if we are doing the other iterations or lambdas, recrate the system, based on the temporary/previous
             #alchemical system
-            alchemical_system = set_lambda_electrostatics(tmp_system,[0],lambdas[k])
+            alchemical_system = set_lambda_electrostatics(reference_system,[0],lambdas[k])
             alchemical_barostat = openmm.MonteCarloBarostat(pressure, temperature, 25)
             alchemical_system.addForce(alchemical_barostat)
             alchemical_thermostat = openmm.AndersenThermostat(temperature, collision_rate)
@@ -133,6 +135,7 @@ for k in range(nstates):
             thermo_simulation.context.setPositions(current_pos)
             #retrieve the reduced unit potential energy
             potential_energy = thermo_simulation.context.getState(getEnergy=True).getPotentialEnergy()/(kT)
+            print(potential_energy)
             u_kln[k,l,iteration] = potential_energy
             outline+=",%.4f"  % potential_energy
         simfile.write(outline)
@@ -154,4 +157,4 @@ mbar = MBAR(u_kln, N_k,verbose = True, method="adaptive", relative_tolerance=1e-
 
 
 print('DeltaF_ij (kcal/mol):')
-print(DeltaF_ij*300.0*0.001987204)
+print(DeltaF_ij[0,nstates-1]*300.0*0.001987204)
