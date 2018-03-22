@@ -13,7 +13,7 @@ collision_rate = 10.0/unit.picoseconds
 timestep = 2.0*unit.femtosecond 
 
 
-def set_lambda_electrostatics(reference_system,alchemical_atoms, lambda_electrostatics):
+def set_lambda_electrostatics(reference_system,alchemical_atoms, lambda_sterics):
     #set to (1-lambda_electrostatics)*charge the ion charge
     #copy_system = copy.deepcopy(reference_system)
     #take the non bonded forces
@@ -31,8 +31,9 @@ def set_lambda_electrostatics(reference_system,alchemical_atoms, lambda_electros
     for particle_index in range(nonbonded_force.getNumParticles()):
         [charge,sigma,epsilon] = nonbonded_force.getParticleParameters(particle_index)
         if particle_index in alchemical_atoms:
-            new_charge = (1-lambda_electrostatics)*charge
-            nonbonded_force.setParticleParameters(particle_index,new_charge,sigma,epsilon)
+            new_epsilon = (1-lambda_sterics)*epsilon
+            new_sigma = (1-lambda_sterics)*sigma
+            nonbonded_force.setParticleParameters(particle_index,abs(0*charge),new_sigma,new_epsilon)
            
     #do we need to add the exception?
     #no since they deal only with water mols
@@ -56,8 +57,8 @@ reference_system = base.createSystem(constraints=app.AllBonds,rigidWater=True,no
 platform = openmm.Platform.getPlatformByName('CUDA')
 properties = {'CudaPrecision': 'mixed'}
 #reference values for a simulation:
-nsteps =10000
-niterations = 100
+nsteps =1000
+niterations = 50
 #we want to save 2000 frames for end states
 freq_endstates = (nsteps*niterations)/2000 #this will slow down the simulation!
 #for al lthe others it's ok to save 5 snapshots
